@@ -1,18 +1,16 @@
-use core::panic;
 use rand::Rng;
-use std::mem;
-use std::sync::{LazyLock, Mutex};
+use std::sync::Mutex;
 use std::time::Duration;
-use std::{collections::VecDeque, sync::Arc, thread};
-use windows::Win32::Foundation::LRESULT;
-use windows::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, DispatchMessageA, GetMessageA, HC_ACTION, PostQuitMessage, TranslateMessage,
-    WM_KEYDOWN,
-};
-use windows::Win32::{
-    Foundation::{LPARAM, WPARAM},
-    UI::WindowsAndMessaging::{KBDLLHOOKSTRUCT, SetWindowsHookExA, WH_KEYBOARD_LL},
-};
+use std::{collections::VecDeque, thread};
+
+use tanchishe::{DIRECTION, Direction};
+
+#[cfg(target_os = "windows")]
+mod windows;
+
+#[cfg(target_os = "linux")]
+mod linux;
+
 struct Stage {
     x: u32,
     y: u32,
@@ -29,18 +27,8 @@ struct Food {
     y: u32,
 }
 
-#[derive(Debug)]
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
 static FOOD: Mutex<Food> = Mutex::new(Food { x: 0, y: 0 });
 static STAGE: Stage = Stage { x: 100, y: 100 };
-static DIRECTION: LazyLock<Arc<Mutex<Direction>>> =
-    LazyLock::new(|| Arc::new(Mutex::new(Direction::Up)));
 static SNAKE: Mutex<VecDeque<Body>> = Mutex::new(VecDeque::new());
 
 fn add_snake_head() {
@@ -79,28 +67,6 @@ fn del_snake_tail() {
     }
 }
 
-#[allow(non_snake_case)]
-unsafe extern "system" fn LowLevelKeyboardProc(
-    nCode: i32,
-    wParam: WPARAM,
-    lParam: LPARAM,
-) -> LRESULT {
-    if nCode as u32 == HC_ACTION {
-        let kb_data = unsafe { *(lParam.0 as *mut KBDLLHOOKSTRUCT) };
-        if wParam.0 as u32 == WM_KEYDOWN {
-            match kb_data.vkCode {
-                0x25 => *DIRECTION.lock().unwrap() = Direction::Left,
-                0x26 => *DIRECTION.lock().unwrap() = Direction::Up,
-                0x27 => *DIRECTION.lock().unwrap() = Direction::Right,
-                0x28 => *DIRECTION.lock().unwrap() = Direction::Down,
-                _ => {}
-            }
-        }
-    }
-
-    unsafe { CallNextHookEx(None, nCode, wParam, lParam) }
-}
-
 fn new_food() {
     let mut rng = rand::thread_rng();
     let mut food = FOOD.lock().unwrap();
@@ -124,7 +90,11 @@ fn init_snake() {
 }
 
 fn main() {
-    thread::spawn(create_hook);
+    #[cfg(target_os = "windows")]
+    thread::spawn(windows::create_hook);
+
+    #[cfg(target_os = "linux")]
+    thread::spawn(linux::create_hook);
     init_snake();
     loop {
         show_snake_info();
@@ -132,22 +102,6 @@ fn main() {
         thread::sleep(Duration::from_secs(1));
         add_snake_head();
         del_snake_tail();
-    }
-}
-
-fn create_hook() {
-    //start hook for listen keyboard input
-    let hh = unsafe { SetWindowsHookExA(WH_KEYBOARD_LL, Some(LowLevelKeyboardProc), None, 0) };
-    if hh.is_err() {
-        panic!("hook error");
-    }
-    //msg loop
-    unsafe {
-        let mut msg = std::mem::zeroed();
-        while GetMessageA(&mut msg, None, 0, 0).0 != 0 {
-            TranslateMessage(&mut msg);
-            DispatchMessageA(&mut msg);
-        }
     }
 }
 
