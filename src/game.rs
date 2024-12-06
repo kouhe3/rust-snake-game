@@ -5,6 +5,7 @@ use std::sync::{LazyLock, Mutex};
 use std::time::Duration;
 use std::{collections::VecDeque, sync::Arc, thread};
 
+#[derive(Clone)]
 pub struct Stage {
     pub x: u32,
     pub y: u32,
@@ -59,17 +60,15 @@ impl Game {
     pub fn new(x: u32, y: u32) -> Self {
         let mut rng = rand::thread_rng();
         let snake = Snake::new(Stage { x: x, y: y });
-        let food = Food {
-            x: rng.gen_range(0..x),
-            y: rng.gen_range(0..y),
-        };
+        let stage = Stage { x: x, y: y };
+        let food = Food::new(&snake.body,stage.clone());
         let player_input = Arc::new(Mutex::new(Direction::Right));
         Game {
             snake: Mutex::new(snake),
             player_input,
             food,
             score: 0,
-            stage: Stage { x: x, y: y },
+            stage,
             game_over: false,
         }
     }
@@ -83,9 +82,7 @@ impl Game {
         let binding = Arc::clone(&self.player_input);
         let new_direct = binding.lock().unwrap();
         let new_head = snake.add_head(new_direct.clone());
-        let last_tail = snake.del_tail();
         //if head is body then game over
-        let body = snake.body.lock().unwrap();
         for b in prev_snake_body.iter(){
             if *b == new_head {
                 self.game_over = true;
@@ -103,7 +100,19 @@ impl Game {
             self.game_over = true;
             return;
         }
+
+        //if head eat food then do not del_tail
+        if new_head.x == self.food.x && new_head.y == self.food.y {
+            self.score += 1;
+            self.food = Food::new(&snake.body, self.stage.clone());
+        } else {
+            let last_tail = snake.del_tail();
+        }
+
+        
+
     }
+
 }
 
 impl Snake {
@@ -160,4 +169,22 @@ impl Snake {
         let mut snake = self.body.lock().unwrap();
         snake.pop_back().unwrap()
     }
+}
+
+
+impl Food {
+    pub fn new(snake_body:&Mutex<VecDeque<Body>>,stage:Stage) ->Self {
+        let mut rng = rand::thread_rng();
+        //gen food in stage but do not in snake body
+        loop {
+            let x = rng.gen_range(0..=stage.x);
+            let y = rng.gen_range(0..=stage.y);
+            let body = snake_body.lock().unwrap();
+            if !body.iter().any(|b| b.x == x && b.y == y) {
+                return Food { x, y };
+            }
+        }
+        
+    }
+
 }
