@@ -5,20 +5,20 @@ use std::sync::{LazyLock, Mutex};
 use std::time::Duration;
 use std::{collections::VecDeque, sync::Arc, thread};
 
-struct Stage {
-    x: u32,
-    y: u32,
+pub struct Stage {
+    pub x: u32,
+    pub y: u32,
 }
 
 #[derive(Debug,Clone,PartialEq)]
 pub struct Body {
-    x: u32,
-    y: u32,
+    pub x: u32,
+    pub y: u32,
 }
 #[derive(Debug)]
 pub struct Food {
-    x: u32,
-    y: u32,
+    pub x: u32,
+    pub y: u32,
 }
 
 #[derive(Debug, PartialEq,Clone)]
@@ -51,7 +51,7 @@ pub struct Game {
     pub player_input: Arc<Mutex<Direction>>,
     pub food: Food,
     pub score: u32,
-    stage: Stage,
+    pub stage: Stage,
     pub game_over: bool,
 }
 
@@ -92,6 +92,16 @@ impl Game {
                 return;
             }
 
+        }
+        //if head hid wall then game over
+        if new_head.x == 0 || new_head.y == 0 {
+            self.game_over = true;
+            return;
+        }
+
+        if new_head.x > self.stage.x || new_head.y > self.stage.y {
+            self.game_over = true;
+            return;
         }
     }
 }
