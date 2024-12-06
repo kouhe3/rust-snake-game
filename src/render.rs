@@ -59,6 +59,7 @@ pub fn game_display(game:&Game){
         print!("=");
     }
     println!("");
+    println!("Score:{}",game.score);
     if game.game_over{
         println!("You die");
     }
