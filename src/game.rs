@@ -11,7 +11,7 @@ pub struct Stage {
     pub y: u32,
 }
 
-#[derive(Debug,Clone,PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Body {
     pub x: u32,
     pub y: u32,
@@ -22,7 +22,7 @@ pub struct Food {
     pub y: u32,
 }
 
-#[derive(Debug, PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Direction {
     Left,
     Up,
@@ -46,7 +46,6 @@ pub struct Snake {
     pub direction: Mutex<Direction>,
 }
 
-
 pub struct Game {
     pub snake: Mutex<Snake>,
     pub player_input: Arc<Mutex<Direction>>,
@@ -61,7 +60,7 @@ impl Game {
         let mut rng = rand::thread_rng();
         let snake = Snake::new(Stage { x: x, y: y });
         let stage = Stage { x: x, y: y };
-        let food = Food::new(&snake.body,stage.clone());
+        let food = Food::new(&snake.body, stage.clone());
         let player_input = Arc::new(Mutex::new(Direction::Right));
         Game {
             snake: Mutex::new(snake),
@@ -73,7 +72,7 @@ impl Game {
         }
     }
 
-    pub fn step(&mut self){
+    pub fn step(&mut self) {
         if self.game_over {
             return;
         }
@@ -83,12 +82,11 @@ impl Game {
         let new_direct = binding.lock().unwrap();
         let new_head = snake.add_head(new_direct.clone());
         //if head is body then game over
-        for b in prev_snake_body.iter(){
+        for b in prev_snake_body.iter() {
             if *b == new_head {
                 self.game_over = true;
                 return;
             }
-
         }
         //if head hid wall then game over
         if new_head.x == 0 || new_head.y == 0 {
@@ -108,11 +106,7 @@ impl Game {
         } else {
             let last_tail = snake.del_tail();
         }
-
-        
-
     }
-
 }
 
 impl Snake {
@@ -171,9 +165,8 @@ impl Snake {
     }
 }
 
-
 impl Food {
-    pub fn new(snake_body:&Mutex<VecDeque<Body>>,stage:Stage) ->Self {
+    pub fn new(snake_body: &Mutex<VecDeque<Body>>, stage: Stage) -> Self {
         let mut rng = rand::thread_rng();
         //gen food in stage but do not in snake body
         loop {
@@ -184,7 +177,5 @@ impl Food {
                 return Food { x, y };
             }
         }
-        
     }
-
 }
