@@ -1,62 +1,58 @@
 use crate::game::Game;
-pub fn show_debug_info(game: &Game) {
-    println!("===========================");
-    //show snake body info
-    println!("snake body info:");
-    let g = game.snake.lock().unwrap();
-    let b = g.body.lock().unwrap();
-    println!("{:?}", b);
-    println!("snake direct:");
-    let d = g.direction.lock().unwrap();
-    println!("{:?}", d);
-    println!("Food:");
-    println!("{:?}", game.food);
-    println!("Player input:");
-    let p = game.player_input.lock().unwrap();
-    println!("{:?}", p);
-    println!("Score:");
-    println!("{}", game.score);
-    println!("Game over:");
-    println!("{}", game.game_over);
+use std::io::{self, stdout, Write};
+use crossterm::{cursor::{MoveTo, MoveLeft, MoveDown}, execute, terminal::{Clear, ClearType}};
+
+const HEIGHT: u16 = 20;
+const WIDTH: u16 = 50;
+
+fn horizontal_line(length: u16) -> io::Result<()> {
+    for _ in 0..length {
+        print!("-");
+    };
+    Ok(())
 }
 
-pub fn game_display(game: &Game) {
-    print!("\x1B[2J");
-    for stage_y in 0..=game.stage.y {
-        for stage_x in 0..=game.stage.x {
-            //check if this block is snake body
-            let mut is_body = false;
-            let g = game.snake.lock().unwrap();
-            let b = g.body.lock().unwrap();
-            for bodys in b.iter() {
-                if bodys.x == stage_x && bodys.y == stage_y {
-                    is_body = true;
-                    break;
-                }
-            }
+fn vertical_line(length: u16) -> io::Result<()> {
+    for _ in 0..length {
+        print!("|");
+        execute!(stdout(), MoveLeft(1), MoveDown(1))?;
+    };
+    Ok(())
+}
 
-            //then check if this block is food
-            let mut is_food = false;
-            if game.food.x == stage_x && game.food.y == stage_y {
-                is_food = true;
-            }
-
-            if is_body {
-                print!("#");
-            } else if is_food {
-                print!("*");
-            } else {
-                print!(" ");
-            }
-        }
-        print!("||\n");
+pub fn game_display(game: &Game) -> io::Result<()> {
+    execute!(stdout(), Clear(ClearType::All))?;
+    // corner
+    execute!(stdout(), MoveTo(0, 0))?;
+    print!("+");
+    execute!(stdout(), MoveTo(WIDTH + 1, 0))?;
+    print!("+");
+    execute!(stdout(), MoveTo(0, HEIGHT + 1))?;
+    print!("+");
+    execute!(stdout(), MoveTo(WIDTH + 1, HEIGHT + 1))?;
+    print!("+");
+    // horizontal line
+    execute!(stdout(), MoveTo(1, 0))?;
+    horizontal_line(WIDTH)?;
+    execute!(stdout(), MoveTo(1, HEIGHT + 1))?;
+    horizontal_line(WIDTH)?;
+    io::stdout().flush()?;
+    // vertical line
+    execute!(stdout(), MoveTo(0, 1))?;
+    vertical_line(HEIGHT)?;
+    execute!(stdout(), MoveTo(WIDTH + 1, 1))?;
+    vertical_line(HEIGHT)?;
+    let g = game.snake.lock().unwrap();
+    let b = g.body.lock().unwrap();
+    for body in b.iter() {
+        execute!(stdout(), MoveTo(body.x, body.y))?;
+        print!("#");
     }
-    for i in 0..game.stage.x {
-        print!("=");
-    }
-    println!("");
-    println!("Score:{}", game.score);
+    execute!(stdout(), MoveTo(game.food.x, game.food.y))?;
+    print!("*");
     if game.game_over {
-        println!("You die");
+        execute!(stdout(), MoveTo(0, HEIGHT + 3))?;
+        println!("You dead!");
     }
+    Ok(())
 }

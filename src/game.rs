@@ -1,25 +1,22 @@
-use core::panic;
 use rand::Rng;
-use std::mem;
-use std::sync::{LazyLock, Mutex};
-use std::time::Duration;
-use std::{collections::VecDeque, sync::Arc, thread};
+use std::sync::Mutex;
+use std::{collections::VecDeque, sync::Arc};
 
 #[derive(Clone)]
 pub struct Stage {
-    pub x: u32,
-    pub y: u32,
+    pub x: u16,
+    pub y: u16,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Body {
-    pub x: u32,
-    pub y: u32,
+    pub x: u16,
+    pub y: u16,
 }
 #[derive(Debug)]
 pub struct Food {
-    pub x: u32,
-    pub y: u32,
+    pub x: u16,
+    pub y: u16,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -56,7 +53,7 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(x: u32, y: u32) -> Self {
+    pub fn new(x: u16, y: u16) -> Self {
         let mut rng = rand::thread_rng();
         let snake = Snake::new(Stage { x: x, y: y });
         let stage = Stage { x: x, y: y };
