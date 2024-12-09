@@ -55,8 +55,8 @@ pub struct Game {
 impl Game {
     pub fn new(x: u16, y: u16) -> Self {
         let mut rng = rand::thread_rng();
-        let snake = Snake::new(Stage { x: x, y: y });
-        let stage = Stage { x: x, y: y };
+        let snake = Snake::new(Stage { x, y });
+        let stage = Stage { x, y };
         let food = Food::new(&snake.body, stage.clone());
         let player_input = Arc::new(Mutex::new(Direction::Right));
         Game {
@@ -101,7 +101,7 @@ impl Game {
             self.score += 1;
             self.food = Food::new(&snake.body, self.stage.clone());
         } else {
-            let last_tail = snake.del_tail();
+            let _ = snake.del_tail();
         }
     }
 }
