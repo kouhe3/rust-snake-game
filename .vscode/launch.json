@@ -1,0 +1,13 @@
+
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb-dap",
+            "name": "debug",
+            "request": "launch",
+            // "program": "${workspaceRoot}/target/debug/${workspaceRootFolderName}"
+            "program": "${workspaceRoot}/target/debug/tanchishe"
+        }
+    ]
+}

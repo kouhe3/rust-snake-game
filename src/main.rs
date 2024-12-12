@@ -17,17 +17,17 @@ fn main() -> std::io::Result<()> {
     execute!(stdout(), EnterAlternateScreen)?;
     
     let mut game = Game::new(50, 20);
-    let d = Arc::clone(&game.player_input);
+    let d = Arc::clone(&game.input);
 
     'main_loop: loop {
         while poll(Duration::from_secs(0))? {
             if let Event::Key(e) = read()? {
                 if e.kind == KeyEventKind::Press {
                     match e.code {
-                        KeyCode::Up => *d.lock().unwrap() = Direction::Up,
-                        KeyCode::Down => *d.lock().unwrap() = Direction::Down,
-                        KeyCode::Left => *d.lock().unwrap() = Direction::Left,
-                        KeyCode::Right => *d.lock().unwrap() = Direction::Right,
+                        KeyCode::Up => d.lock().unwrap().set(Direction::Up),
+                        KeyCode::Down => d.lock().unwrap().set(Direction::Down),
+                        KeyCode::Left => d.lock().unwrap().set(Direction::Left),
+                        KeyCode::Right => d.lock().unwrap().set(Direction::Right),
                         KeyCode::Char('q') => break 'main_loop,
                         _ => {}
                     }
@@ -36,7 +36,7 @@ fn main() -> std::io::Result<()> {
         }
         game.step();
         game_display(&game)?;
-        thread::sleep(Duration::from_millis(1000));
+        thread::sleep(Duration::from_millis(16));
     };
     disable_raw_mode()?;
     execute!(stdout(), LeaveAlternateScreen)?;

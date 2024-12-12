@@ -1,6 +1,7 @@
 use rand::Rng;
 use std::sync::Mutex;
 use std::{collections::VecDeque, sync::Arc};
+use std::time::{SystemTime, Duration};
 
 #[derive(Clone)]
 pub struct Stage {
@@ -13,6 +14,7 @@ pub struct Body {
     pub x: u16,
     pub y: u16,
 }
+
 #[derive(Debug)]
 pub struct Food {
     pub x: u16,
@@ -38,14 +40,28 @@ impl Direction {
     }
 }
 
+pub struct Input {
+    pub direction: Direction,
+    pub status: bool,
+    pub last_operation: SystemTime, 
+}
+
+impl Input {
+    #[inline]
+    pub fn set(&mut self, direction: Direction) {
+        self.direction = direction;
+        self.status = true;
+    }
+}
+
 pub struct Snake {
     pub body: Mutex<VecDeque<Body>>,
-    pub direction: Mutex<Direction>,
+    direction: Mutex<Direction>,
 }
 
 pub struct Game {
     pub snake: Mutex<Snake>,
-    pub player_input: Arc<Mutex<Direction>>,
+    pub input: Arc<Mutex<Input>>,
     pub food: Food,
     pub score: u32,
     pub stage: Stage,
@@ -54,14 +70,17 @@ pub struct Game {
 
 impl Game {
     pub fn new(x: u16, y: u16) -> Self {
-        let mut rng = rand::thread_rng();
         let snake = Snake::new(Stage { x, y });
         let stage = Stage { x, y };
         let food = Food::new(&snake.body, stage.clone());
-        let player_input = Arc::new(Mutex::new(Direction::Right));
+        let input = Arc::new(Mutex::new(Input {
+            direction: Direction::Right,
+            status: false,
+            last_operation: SystemTime::now(),
+        }));
         Game {
             snake: Mutex::new(snake),
-            player_input,
+            input,
             food,
             score: 0,
             stage,
@@ -70,14 +89,22 @@ impl Game {
     }
 
     pub fn step(&mut self) {
+        let input = self.input.clone();
+        // proceed if status is true, or if status is false, and no operations
+        // occurred in the last second.
+        if input.lock().unwrap().last_operation.elapsed().unwrap() < Duration::from_secs(1) && input.lock().unwrap().status {
+            return;
+        }
+        input.lock().unwrap().last_operation = SystemTime::now();
+        input.lock().unwrap().status = false;
         if self.game_over {
             return;
         }
         let mut snake = self.snake.lock().unwrap();
         let prev_snake_body = snake.body.lock().unwrap().clone();
-        let binding = Arc::clone(&self.player_input);
-        let new_direct = binding.lock().unwrap();
-        let new_head = snake.add_head(new_direct.clone());
+        let binding = Arc::clone(&self.input);
+        let new_input = binding.lock().unwrap();
+        let new_head = snake.add_head(new_input.direction.clone());
         //if head is body then game over
         for b in prev_snake_body.iter() {
             if *b == new_head {
@@ -125,13 +152,13 @@ impl Snake {
     }
 
     //返回新的head的坐标
-    fn add_head(&mut self, intput_direction: Direction) -> Body {
+    fn add_head(&mut self, input_direction: Direction) -> Body {
         let mut snake = self.body.lock().unwrap();
         let mut snake_direction = self.direction.lock().unwrap();
         //check if player input oppside snake self,
         //if oppside then just ignore player input do not change current direction
-        if snake_direction.reverse() != intput_direction {
-            *snake_direction = intput_direction;
+        if snake_direction.reverse() != input_direction {
+            *snake_direction = input_direction;
         }
         let new_head = match *snake_direction {
             Direction::Up => Body {
