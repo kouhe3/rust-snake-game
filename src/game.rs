@@ -92,7 +92,7 @@ impl Game {
         let input = self.input.clone();
         // proceed if status is true, or if status is false, and no operations
         // occurred in the last second.
-        if input.lock().unwrap().last_operation.elapsed().unwrap() < Duration::from_secs(1) && input.lock().unwrap().status {
+        if input.lock().unwrap().last_operation.elapsed().unwrap() < Duration::from_secs(1) && !input.lock().unwrap().status {
             return;
         }
         input.lock().unwrap().last_operation = SystemTime::now();
