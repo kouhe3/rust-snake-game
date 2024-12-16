@@ -194,8 +194,8 @@ impl Food {
         let mut rng = rand::thread_rng();
         //gen food in stage but do not in snake body
         loop {
-            let x = rng.gen_range(0..=stage.x);
-            let y = rng.gen_range(0..=stage.y);
+            let x = rng.gen_range(1..=stage.x);
+            let y = rng.gen_range(1..=stage.y);
             let body = snake_body.lock().unwrap();
             if !body.iter().any(|b| b.x == x && b.y == y) {
                 return Food { x, y };
