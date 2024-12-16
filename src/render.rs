@@ -1,5 +1,5 @@
 use crate::game::Game;
-use std::io::{self, stdout, Write};
+use std::{io::{self, stdout, Write}, time::Instant};
 use crossterm::{cursor::{MoveTo, MoveLeft, MoveDown}, execute, terminal::{Clear, ClearType}};
 
 fn horizontal_line(length: u16) -> io::Result<()> {
@@ -18,6 +18,7 @@ fn vertical_line(length: u16) -> io::Result<()> {
 }
 
 pub fn game_display(game: &Game) -> io::Result<()> {
+    let now = Instant::now();
     execute!(stdout(), Clear(ClearType::All))?;
     // corner
     execute!(stdout(), MoveTo(0, 0))?;
@@ -47,8 +48,10 @@ pub fn game_display(game: &Game) -> io::Result<()> {
     }
     execute!(stdout(), MoveTo(game.food.x, game.food.y))?;
     print!("*");
+    execute!(stdout(), MoveTo(0, game.stage.y + 3))?;
+    println!("{:.2}ms", now.elapsed().as_millis_f64());
     if game.game_over {
-        execute!(stdout(), MoveTo(0, game.stage.y + 3))?;
+        execute!(stdout(), MoveTo(0, game.stage.y + 5))?;
         println!("You dead!");
     }
     Ok(())
